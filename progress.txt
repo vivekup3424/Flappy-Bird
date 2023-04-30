@@ -1,0 +1,6 @@
+I am going to code this in OOPS-approach,
+hence I need to make different classes for each of the above mentioned tasks.
+Classes:-
+1. Bird
+2. Pipe - PipeTop and PipeBottom
+3. Ground
