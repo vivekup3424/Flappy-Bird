@@ -79,6 +79,30 @@ class Bird:
         if self.tilt <= -80:
             self.img = self.IMGS[1]
             self.img_count = self.ANIMATION_TIME*2
+        rotated_image = pygame.transform.rotate(self.img,self.tilt)
+        new_rect = rotated_image.get_rect(center = self.img.get_rect(topleft = (self.x,self.y)).center)
+        win.blit(rotated_image,new_rect.topleft)
     
-while(True):
-    bird.move()
+    #used for collision
+    def get_mask(self):
+        return pygame.mask.from_surface(self.img)
+    
+def draw_window(win,bird):
+    #blit is used to draw something on the screen
+    win.blit(BACKGROUND_IMG,(0,0))
+    bird.draw(win) # Drawing the bird on the window
+    pygame.display.update()
+def main():
+    bird = Bird(200,200)
+    WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
+    while True:
+        #keep track on events, if we quit the game,we exit the window
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        bird.move()
+        draw_window(WIN,bird)
+
+if __name__ == "__main__":
+    main()
