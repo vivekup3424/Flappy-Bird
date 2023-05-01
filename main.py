@@ -4,7 +4,7 @@ import time
 import os
 import random
 
-WIN_WIDTH = 600
+WIN_WIDTH = 500
 WIN_HEIGHT = 800
 
 # Load images of the bird
@@ -12,10 +12,10 @@ BIRD_IMGS = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bi
                 pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird2.png"))),
                 pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird3.png")))]
 
-PIPE_IMG = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "pipe.png")))]
+PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "pipe.png")))
 
-GROUND_IMG = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "base.png")))]
-BACKGROUND_IMG = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png")))]
+GROUND_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "base.png")))
+BACKGROUND_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png")))
 
 class Bird:
     IMGS = BIRD_IMGS
@@ -95,7 +95,9 @@ def draw_window(win,bird):
 def main():
     bird = Bird(200,200)
     WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
+    clock = pygame.time.Clock()
     while True:
+        clock.tick(30)
         #keep track on events, if we quit the game,we exit the window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
