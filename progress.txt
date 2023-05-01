@@ -4,3 +4,8 @@ Classes:-
 1. Bird
 2. Pipe - PipeTop and PipeBottom
 3. Ground
+
+0502 01/05/2023
+After this in later section of the I am going
+-generate many bird at the same time , and have them all move around based on their
+own rules of the Neural Networks
