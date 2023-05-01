@@ -9,3 +9,4 @@ Classes:-
 After this in later section of the I am going
 -generate many bird at the same time , and have them all move around based on their
 own rules of the Neural Networks
+-Create a population of birds, and have them all learn to play the game at the same time.

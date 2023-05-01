@@ -86,12 +86,78 @@ class Bird:
     #used for collision
     def get_mask(self):
         return pygame.mask.from_surface(self.img)
+class Pipe:
+    GAP = 200 # Space between the pipes
+    VEL = 5 # How fast the pipes are moving
+    #since our bird doesn't move, we move the pipes
+    def __init__(self,x):
+        self.x = x
+        #height of tubes is random
+        self.height = 0
+        self.gap = 100
+        self.top = 0
+        self.bottom = 0
+        self.PIPE_TOP = pygame.transform.flip(PIPE_IMG,False,True) # Flipping the pipe image
+        self.PIPE_BOTTOM = PIPE_IMG
+        self.passed = False
+        self.set_height()
+    def set_height(self):
+        #get a random number for where our pipe should be
+        self.height = random.randrange(50,450)
+        self.top = self.height - self.PIPE_TOP.get_height()
+        self.bottom = self.height + self.GAP
+    def move(self):
+        self.x -= self.VEL
+    def draw(self,win):
+        win.blit(self.PIPE_TOP,(self.x,self.top))
+        win.blit(self.PIPE_BOTTOM,(self.x,self.bottom))
+
+    #defining collision
+    #mask is used to define the pixels of the image, inplace of using hit-boxes
+    def collide(self,bird):
+        bird_mask = bird.get_mask()
+        top_mask = pygame.mask.from_surface(self.PIPE_TOP) # Mask for the top pipe
+        bottom_mask = pygame.mask.from_surface(self.PIPE_BOTTOM) # Mask for the bottom pipe
+
+        #now we need to calculate the offset- how far away the masks are from each other
+        #offset is a tuple
+        top_offset = (self.x - bird.x,self.top - round(bird.y))
+        bottom_offset = (self.x - bird.x, self.bottom - round(bird.y))
+
+        b_point = bird_mask.overlap(bottom_mask, bottom_offset)
+        t_point = bird_mask.overlap(top_mask, top_offset)
+        if t_point or b_point:
+            return True
+        else:
+            return False
     
-def draw_window(win,bird):
+class Base:
+    VEL = 5 # Same velocity as the pipes
+    WIDTH = GROUND_IMG.get_width()
+    IMG = GROUND_IMG
+    def __init__(self,y):
+        self.y = y
+        self.x1 = 0
+        self.x2 = self.WIDTH
+    def move(self):
+        self.x1 -= self.VEL
+        self.x2 -= self.VEL
+        #if the first image is off the screen, we move it to the back
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 + self.WIDTH
+        #if the second image is off the screen, we move it to the back
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH
+    def draw(self,win):
+        win.blit(self.IMG,(self.x1,self.y))
+        win.blit(self.IMG,(self.x2,self.y))
+
+def draw_window(win,bird, pipes, base):
     #blit is used to draw something on the screen
     win.blit(BACKGROUND_IMG,(0,0))
     bird.draw(win) # Drawing the bird on the window
     pygame.display.update()
+
 def main():
     bird = Bird(200,200)
     WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
