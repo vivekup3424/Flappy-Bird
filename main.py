@@ -3,9 +3,13 @@ import neat
 import time
 import os
 import random
-pygame.font.init()
+pygame.font.init() #starts the font module
 WIN_WIDTH = 600
 WIN_HEIGHT = 700
+FLOOR = 730
+STAT_FONT = pygame.font.SysFont("comicsans",50)
+END_FONT = pygame.font.SysFont("comicsans",70)
+DRAW_LINES = False
 WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT)) # Creating the window
 pygame.display.set_caption("Fucking Bird")
 # Load images of the bird
@@ -14,8 +18,8 @@ PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","pipe.
 
 GROUND_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.png")).convert_alpha())
 BACKGROUND_IMG = bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (600, 800))
+gen = 0
 
-STAT_FONT = pygame.font.SysFont("comicsans",50)
 class Bird:
     """
     Bird class representing the flappy bird
@@ -199,7 +203,7 @@ class Base:
         win.blit(self.IMG,(self.x1,self.y))
         win.blit(self.IMG,(self.x2,self.y))
 
-def draw_window(win,bird, pipes, base,score):
+def draw_window(win,birds, pipes, base,score):
     """
     draws the windows for the main game loop
     :param win: pygame window surface
@@ -210,6 +214,8 @@ def draw_window(win,bird, pipes, base,score):
     :param pipe_ind: index of closest pipe
     :return: None
     """
+    #if gen == 0:
+    #    gen = 1
     #blit is used to draw something on the screen
     win.blit(BACKGROUND_IMG,(0,0))
     text = STAT_FONT.render("Score: " + str(score),1,(255,255,255))
@@ -217,12 +223,21 @@ def draw_window(win,bird, pipes, base,score):
     #drawing the pipes
     for pipe in pipes:
         pipe.draw(win)
+    for bird in birds:
+        bird.draw(win) # Drawing the bird on the window
     base.draw(win)
-    bird.draw(win) # Drawing the bird on the window
     pygame.display.update()
 
 def main(genomes,config):
-    bird = Bird(230,500) #optimal position for the bird
+    nets = []
+    ge = []
+    birds = [] #dynamically allocated list of birds
+    for _,g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g,config)
+        nets.append(net)
+        birds.append(Bird(230,350))
+        g.fitness = 0
+        ge.append(g)
     WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
     base = Base(600)
     pipes = [Pipe(700)]
@@ -237,29 +252,53 @@ def main(genomes,config):
                 quit()
         #bird.move()
         base.move()
+        pipe_ind = 0
+        if len(birds) > 0:
+            if len(pipes)>1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
+                pipe_ind = 1
+        else:
+            break
+        for x,bird in enumerate(birds):
+            bird.move()
+            ge[x].fitness += 0.1
+            #send bird location, top pipe location and bottom pipe location and determine from network whether to jump or not
+            output = nets[x].activate((bird.y,abs(bird.y - pipes[pipe_ind].height),abs(bird.y - pipes[pipe_ind].bottom)))
+            if output[0] > 0.5:
+                bird.jump()
         remove = [] #removing pipes list
         add_pipe = False
         for pipe in pipes:
-            #check for collision with the bird
-            if pipe.collide(bird,WIN):
-                print("Fuck you, you lost, get the fuck away now you MORON!!!")
-                pass
+            for x,bird in enumerate(birds):
+                #check for collision with the bird
+                if pipe.collide(bird,WIN):
+                    ge[x].fitness -= 1
+                    birds.pop(x)
+                    nets.pop(x)
+                    ge.pop(x)
+                if not pipe.passed and pipe.x < bird.x:
+                    pipe.passed = True
+                    add_pipe = True
             #if pipe has passed
             if pipe.x + pipe.PIPE_TOP.get_width()<0:
                 remove.append(pipe) #remove the pipe
-            if not pipe.passed and pipe.x < bird.x:
-                pipe.passed = True
-                add_pipe = True
             pipe.move()
         if add_pipe:
             score+=1
+            for g in ge:
+                g.fitness +=5
             random_number = random.randint(500, 900)
             pipes.append(Pipe(random_number))
         for r in remove:
             pipes.remove(r)
-        if ((bird.y + bird.img.get_height()) >=730): #height of the base, bird has touched the base
-            pass
-        draw_window(WIN,bird,pipes,base,score)
+
+        #checking for individuals birds
+        for x,bird in enumerate(birds):
+            if ((bird.y + bird.img.get_height()) >=730 or bird.y < 0): #height of the base, bird has touched the base
+                    birds.pop(x)
+                    nets.pop(x)
+                    ge.pop(x)
+                    
+        draw_window(WIN,birds,pipes,base,score)
 def run(config_path):
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation,config_path)
     p = neat.Population(config)
