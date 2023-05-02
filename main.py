@@ -3,7 +3,7 @@ import neat
 import time
 import os
 import random
-
+pygame.font.init()
 WIN_WIDTH = 600
 WIN_HEIGHT = 700
 WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT)) # Creating the window
@@ -15,6 +15,7 @@ PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","pipe.
 GROUND_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.png")).convert_alpha())
 BACKGROUND_IMG = bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (600, 800))
 
+STAT_FONT = pygame.font.SysFont("comicsans",50)
 class Bird:
     """
     Bird class representing the flappy bird
@@ -198,7 +199,7 @@ class Base:
         win.blit(self.IMG,(self.x1,self.y))
         win.blit(self.IMG,(self.x2,self.y))
 
-def draw_window(win,bird, pipes, base):
+def draw_window(win,bird, pipes, base,score):
     """
     draws the windows for the main game loop
     :param win: pygame window surface
@@ -211,6 +212,8 @@ def draw_window(win,bird, pipes, base):
     """
     #blit is used to draw something on the screen
     win.blit(BACKGROUND_IMG,(0,0))
+    text = STAT_FONT.render("Score: " + str(score),1,(255,255,255))
+    win.blit(text,(WIN_WIDTH - 10 - text.get_width(),10))
     #drawing the pipes
     for pipe in pipes:
         pipe.draw(win)
@@ -218,12 +221,13 @@ def draw_window(win,bird, pipes, base):
     bird.draw(win) # Drawing the bird on the window
     pygame.display.update()
 
-def main():
+def main(genomes,config):
     bird = Bird(230,500) #optimal position for the bird
     WIN = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
     base = Base(600)
-    pipes = [Pipe(480),Pipe(900),Pipe(1500),Pipe(2000)]
+    pipes = [Pipe(700)]
     clock = pygame.time.Clock()
+    score = 0
     while True:
         clock.tick(30)
         #keep track on events, if we quit the game,we exit the window
@@ -233,10 +237,40 @@ def main():
                 quit()
         #bird.move()
         base.move()
+        remove = [] #removing pipes list
+        add_pipe = False
         for pipe in pipes:
             #check for collision with the bird
+            if pipe.collide(bird,WIN):
+                print("Fuck you, you lost, get the fuck away now you MORON!!!")
+                pass
+            #if pipe has passed
+            if pipe.x + pipe.PIPE_TOP.get_width()<0:
+                remove.append(pipe) #remove the pipe
+            if not pipe.passed and pipe.x < bird.x:
+                pipe.passed = True
+                add_pipe = True
             pipe.move()
-        draw_window(WIN,bird,pipes,base)
+        if add_pipe:
+            score+=1
+            random_number = random.randint(500, 900)
+            pipes.append(Pipe(random_number))
+        for r in remove:
+            pipes.remove(r)
+        if ((bird.y + bird.img.get_height()) >=730): #height of the base, bird has touched the base
+            pass
+        draw_window(WIN,bird,pipes,base,score)
+def run(config_path):
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation,config_path)
+    p = neat.Population(config)
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    winner = p.run(main,50) #setting the fitness function
+    print('\nBest genome:\n{!s}'.format(winner))
 
 if __name__ == "__main__":
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir,"config-feedforward.txt")
+    run(config_path)
     main()
